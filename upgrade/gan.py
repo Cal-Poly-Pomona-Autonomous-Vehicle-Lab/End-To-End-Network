@@ -4,9 +4,9 @@ import torch.nn as nn
 
 
 # VGG 16 Model 
-class Generator(nn.Module): 
+class Discriminator(nn.Module): 
     def __init__(self): 
-        super(Generator, self).__init__()
+        super(Discriminator, self).__init__()
         self.conv1x1 = nn.Conv2d(3, 64, kernel_size=(3, 3), padding=1)
         self.conv1x2 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=1)
         self.maxpooling1 = nn.MaxPool2d((2, 2), stride=2)
@@ -69,9 +69,9 @@ class Generator(nn.Module):
         return x
 
 
-class Discriminator(nn.Module): 
+class Generator(nn.Module): 
     def __init__(self): 
-        super(Discriminator, self).__init__()
+        super(Generator, self).__init__()
     
     def forward(self): 
         pass
