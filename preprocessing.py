@@ -19,8 +19,18 @@ class data_processing:
         self.merge_log_file = merge_log_file 
         self.count = 0
         self.image_used = [] 
+
         self.merge_log_files() 
         self.count_files()
+
+    def augment_image(self, front_img: Image, steering: float) -> (Image, float):
+        is_flip = random.choice([True, False])
+
+        if is_flip == True: 
+            front_img = transforms.v2.functional.horizontal_flip(front_img)
+            steering = steering * -1
+        
+        return (front_img, steering)
     
     def check_if_folders_exists(self) -> None: 
         if not os.path.exists(self.logging_path):
@@ -126,16 +136,17 @@ class data_processing:
         right_image_yuv = right_img.convert("YCbCr")
         left_image_yuv = left_img.convert("YCbCr")
 
+        steering_val = int(line_arr[4]) 
+        steering_val = 2 * ((steering_val - 451) / (573 - 451)) - 1 
+
+        # front_image_yuv, steering_val = self.augment_image(front_image_yuv, steering_val)
+
         front_image_yuv = transform(front_image_yuv)
         right_image_yuv = transform(right_image_yuv)
         left_image_yuv = transform(left_image_yuv)
 
-
         # Max 573 
         # Min 451
-        steering_val = int(line_arr[4]) 
-        steering_val = 2 * ((steering_val - 451) / (573 - 451)) - 1 
-        
         steering = torch.tensor(steering_val, dtype=torch.float32) 
 
         return front_image_yuv, steering 
