@@ -8,7 +8,7 @@ from PIL import Image
 from torchvision import transforms 
 
 transform = transforms.Compose([
-    transforms.Resize((66, 200)),
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize((0.6087, 0.6015, 0.5598), (0.1883, 0.1921, 0.2182))
 ]) 
@@ -142,7 +142,6 @@ class data_processing:
         front_img_yuv = cv2.cvtColor(front_img_crop, cv2.COLOR_RGB2YUV)
         pil_img = Image.fromarray(front_img_yuv)
 
-        # Normalize
         steering_val = int(line_arr[4]) 
         steering_val = (2 * ((steering_val - 451) / (573 - 451))) - 1 
 
