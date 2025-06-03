@@ -2,6 +2,7 @@ import os
 import torch
 import cv2 
 import random
+import matplotlib.pyplot as plt
 
 from PIL import Image 
 from torchvision import transforms 
@@ -107,7 +108,7 @@ class data_processing:
             if line_idx == idx: 
                 line_req = line            
                 break 
-
+            
         if line_req is None: 
             raise IndexError("No Index Found")
 
@@ -123,27 +124,33 @@ class data_processing:
         right_img_name = self.image_path + right_img_name + ".jpg"
 
         # Get all Images and steering value 
-        front_img = Image.open(front_img_name) 
-        right_img = Image.open(right_img_name) 
-        left_img = Image.open(left_img_name) 
+        # front_img = Image.open(front_img_name) 
+        # right_img = Image.open(right_img_name) 
+        # left_img = Image.open(left_img_name) 
+
+        front_img = cv2.imread(right_img_name)
 
         # Crop the image to remove any uneccesarry part of the vehicle
         # front_img = right_img.crop((110, 0, 540, 450))
-        front_img = right_img.crop((110, 0, 540, 450))
+        # front_img = right_img.crop((110, 0, 540, 450))
+        front_img_crop = front_img[0:410, 110:540]
 
         # Convert to yuv image 
-        front_image_yuv = front_img.convert("YCbCr")
-        right_image_yuv = right_img.convert("YCbCr")
-        left_image_yuv = left_img.convert("YCbCr")
+        # front_image_yuv = front_img.convert("YCbCr")
+        # right_image_yuv = right_img.convert("YCbCr")
+        # left_image_yuv = left_img.convert("YCbCr")
+        front_img_yuv = cv2.cvtColor(front_img_crop, cv2.COLOR_RGB2YUV)
+        pil_img = Image.fromarray(front_img_yuv)
 
+        # Normalize
         steering_val = int(line_arr[4]) 
-        steering_val = 2 * ((steering_val - 451) / (573 - 451)) - 1 
+        steering_val = (2 * ((steering_val - 451) / (573 - 451))) - 1 
 
         # front_image_yuv, steering_val = self.augment_image(front_image_yuv, steering_val)
 
-        front_image_yuv = transform(front_image_yuv)
-        right_image_yuv = transform(right_image_yuv)
-        left_image_yuv = transform(left_image_yuv)
+        front_image_yuv = transform(pil_img)
+        # right_image_yuv = transform(right_image_yuv)
+        # left_image_yuv = transform(left_image_yuv)
 
         # Max 573 
         # Min 451
