@@ -9,4 +9,4 @@
 ## Training & Validation
     training.py - Where training and validation occurs for the model 
 
-    python3 training.py and choose whether to run or validate a model
+    python3 training.py and choose whether to train or validate a model
