@@ -1,5 +1,6 @@
 import torch
 
+import numpy as np
 import torch.nn as nn
 import sys; sys.path.append('..')
 import preprocessing
@@ -13,6 +14,7 @@ from dccgan import Generator, Discriminator
 
 def training(): 
     EPOCH = 1
+    BATCH_SIZE = 1
 
     device = None
     if torch.cuda.is_available(): 
@@ -49,20 +51,19 @@ def training():
     for epoch in range(EPOCH): 
         for (front_img, steering) in train_dataloader: 
 
-            if img_count > 1000: 
+            if img_count > 5000: 
                 break
             
             pred_ds = Dis.forward(front_img)
             fake_img = Gen.forward(noise)
 
             target = torch.full_like(pred_ds, 1.0)
-            loss_real = loss_fn(pred_ds, target)
+            loss_real = (0.5 * 1) * loss_fn(pred_ds, target)
 
             output_fake = Dis.forward(fake_img)
-            label_fake = torch.full_like(output_fake, 1)
-            loss_fake = loss_fn(output_fake, label_fake)
+            output_fake = (0.5 * 1) * (output_fake ** 2) 
 
-            loss_D = 0.5 * (loss_real + loss_fake)
+            loss_D = (loss_real + output_fake)
 
             Dis.zero_grad() 
             loss_D.backward() 
@@ -72,7 +73,7 @@ def training():
 
             f_output = Dis.forward(fake_output)
             label_gen = torch.full_like(f_output, 1)
-            loss_G = 0.5 * loss_fn(f_output, label_gen)
+            loss_G = (1 / 1) * loss_fn(f_output, label_gen)
 
             Gen.zero_grad() 
             loss_G.backward() 
@@ -80,7 +81,7 @@ def training():
 
             print(f"Loss Dis: {loss_D}")
             print(f"Loss Gen: {loss_G}")
-            print(f"Progress: {img_count / total_img_count * 100:.2f}%")
+            print(f"Progress: {img_count / total_img_count * 100:.2f}% \n\n")
             img_count = img_count + 1
 
 
@@ -106,7 +107,6 @@ def validation() -> None:
     data = preprocessing.data_processing(image_folder, logging_folder, merge_folder)
     train_dataloader = DataLoader(data, batch_size=1, shuffle=True)
         
-    
 
 
 if __name__ == '__main__': 
