@@ -24,15 +24,16 @@ def training():
     else:
         device = 'cuda'
     
+    username = os.getlogin()
 
     image_folder = "/Volumes/joeham/logging_camera_down/image_data/" 
     logging_folder = "/Volumes/joeham/logging_camera_down/logging_data/"
     merge_folder = "/Volumes/joeham/logging_camera_down/"
 
     if sys.platform == "linux": 
-        image_folder = "/media/jojo-main/joeham/logging_camera_down/image_data"
-        logging_folder = "/media/jojo-main/joeham/logging_camera_down/logging_data"
-        merge_folder = "/media/jojo-main/joeham/logging_camera_down/"
+        image_folder = f"/media/{username}/joeham/logging_camera_down/image_data"
+        logging_folder = f"/media/{username}/joeham/logging_camera_down/logging_data"
+        merge_folder = f"/media/{username}/joeham/logging_camera_down/"
 
     data = preprocessing.data_processing(image_folder, logging_folder, merge_folder)
     train_dataloader = DataLoader(data, batch_size=1, shuffle=True)
@@ -40,16 +41,23 @@ def training():
     Dis = Discriminator() 
     Gen = Generator(noise_size=100, conv_dim=3)
 
+    Dis.to(device)
+    Gen.to(device)
+
     optimizer_D = torch.optim.Adam(Dis.parameters(), lr=0.0001) 
     optimizer_G = torch.optim.Adam(Gen.parameters(), lr=0.0001) 
 
     loss_fn = nn.MSELoss()
     noise = torch.randn(1, 100, 1, 1)
+    noise = noise.to(device)
 
     img_count = 1 
     total_img_count = len(data)
     for epoch in range(EPOCH): 
+        img_count = 1
         for (front_img, steering) in train_dataloader: 
+
+            front_img = front_img.to(device)
 
             if img_count > 5000: 
                 break
@@ -82,7 +90,7 @@ def training():
             print(f"Loss Dis: {loss_D}")
             print(f"Loss Gen: {loss_G}")
             print(f"Progress: {img_count / total_img_count * 100:.2f}% \n\n")
-            img_count = img_count + 1
+            img_count = img_count + 64 
 
 
     f_img = Gen.forward(noise)
