@@ -24,12 +24,14 @@ class Discriminator(nn.Module):
 class Generator(nn.Module): 
     def __init__(self, noise_size, conv_dim): 
         super(Generator, self).__init__() 
-        self.deconv1 = nn.ConvTranspose2d(100, 128, kernel_size=(3, 3))
-        self.deconv2 = nn.ConvTranspose2d(128, 64, kernel_size=(3, 3))
-        self.deconv3 = nn.ConvTranspose2d(64, 32, kernel_size=(3, 3))
-        self.deconv4 = nn.ConvTranspose2d(32, 3, kernel_size=(3, 3))
+        self.deconv0 = nn.ConvTranspose2d(100, 1024, kernel_size=(2,2), stride=1)
+        self.deconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=(2, 2), stride=2)
+        self.deconv2 = nn.ConvTranspose2d(512, 256, kernel_size=(2, 2), stride=(2,2), padding=1)
+        self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=(3, 3), stride=(2,2), padding=1)
+        self.deconv4 = nn.ConvTranspose2d(128, 3, kernel_size=(3, 3), stride=(2,2), padding=1)
 
     def forward(self, x): 
+        x = F.relu(self.deconv0(x))
         x = F.relu(self.deconv1(x))
         x = F.relu(self.deconv2(x))
         x = F.relu(self.deconv3(x))
