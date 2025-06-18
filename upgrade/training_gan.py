@@ -58,18 +58,15 @@ def training():
         for (front_img, steering) in train_dataloader: 
 
             front_img = front_img.to(device)
-
-            if img_count > 5000: 
-                break
             
             pred_ds = Dis.forward(front_img)
             fake_img = Gen.forward(noise)
-
+            
             target = torch.full_like(pred_ds, 1.0)
-            loss_real = (0.5 * 1) * loss_fn(pred_ds, target)
+            loss_real = 0.5 * loss_fn(pred_ds, target)
 
             output_fake = Dis.forward(fake_img)
-            output_fake = (0.5 * 1) * (output_fake ** 2) 
+            output_fake = 0.5 * torch.mean(output_fake ** 2) 
 
             loss_D = (loss_real + output_fake)
 
@@ -81,11 +78,11 @@ def training():
 
             f_output = Dis.forward(fake_output)
             label_gen = torch.full_like(f_output, 1)
-            loss_G = (1 / 1) * loss_fn(f_output, label_gen)
+            loss_G = loss_fn(f_output, label_gen)
 
-            Gen.zero_grad() 
-            loss_G.backward() 
-            optimizer_G.step()
+            # Gen.zero_grad() 
+            # loss_G.backward() 
+            # optimizer_G.step()
 
             print(f"Loss Dis: {loss_D}")
             print(f"Loss Gen: {loss_G}")
