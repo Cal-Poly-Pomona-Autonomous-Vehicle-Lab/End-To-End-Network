@@ -1,28 +1,90 @@
 from PIL import Image
+import os
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 import numpy as np 
+import numpy.typing as npt
+
+image_folder = "/Volumes/joeham/valid_test_1/image_data/"
+logging_folder = "/Volumes/joeham/valid_test_1/logging_data/"
+merge_folder = "/Volumes/joeham/valid_test_1/"
+
+BATCH_SIZE = 1
 
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize((0.6087, 0.6015, 0.5598), (0.1883, 0.1921, 0.2182))
 ])
 
-image_path = "/../../../Volumes/joeham/logging_camera_down/image_data/left_frame_37090.0.jpg"
+def calculate_std(img: Image, width: int, height: int, mean: npt.NDArray) -> npt.NDArray: 
+    yuv_std = np.zeros(3, dtype=np.float64)
+    yuv_sum = np.zeros(3, dtype=np.float64) 
 
-img = Image.open(image_path)
+    for x in range(width): 
+        for y in range(height): 
+            pixel_val = np.array(img.getpixel((x, y)), dtype=np.float64)
+            yuv_sum += (pixel_val) ** 2
 
-img_np = np.array(img)
+    
+    return yuv_sum
 
-plt.hist(img_np.ravel(), bins=50, density=True)
-plt.xlabel("pixel values")
-plt.ylabel("relative frequency")
-plt.title("distribution of pixels")
-plt.show()
+def calculate_mean(img: Image, width: int, height: int) -> npt.NDArray: 
+    yuv_sum = np.zeros(3, dtype=np.float64)
+
+    for x in range(width): 
+        for y in range(height): 
+            pixel_val = np.array(img.getpixel((x, y)), dtype=np.float64)
+            yuv_sum += pixel_val
+
+    return yuv_sum
+
+def calculate_standardization() -> None:
+    pass 
+
+def iterate_files() -> None: 
+    total_pixels = 0
+
+    yuv_mean = np.zeros(3, dtype=np.float64)
+    yuv_std = np.zeros(3, dtype=np.float64)
+
+    image_file_names = os.listdir(image_folder)
+
+    print("Number of files: " + str(len(image_file_names)))
+    processed_files = 1
+
+    for image in image_file_names: 
+
+        # Ensure hidden files are not included
+        if image.startswith("."): 
+            continue 
+
+        if processed_files % 10 == 0: 
+            print(f"Files processed {processed_files / len(image_file_names)}")
 
 
-img_tensor = transform(img)
-mean, std = img_tensor.mean([1,2]), img_tensor.std([1,2])
+        img = Image.open(image_folder + image)
+        # Convert to YUV scale
+        img = img.convert("YCbCr")
+        
+        (width, height) = img.size 
+        total_pixels += width * height * BATCH_SIZE
 
-print("Mean: " + str(mean))
-print("Std: " + str(std))
+        yuv_sum = calculate_mean(img, width, height)
+        yuv_mean += yuv_sum 
+
+        std = calculate_std(img, width, height, yuv_mean) 
+        yuv_std += std 
+
+        processed_files += 1
+    
+    yuv_mean /= total_pixels 
+
+
+    # E[x^2] - E[x]^2
+    # sqrt ( 1/N * sum(x)^2 - 1/N * sum(x - mean) ^2 ) 
+    yuv_std = np.sqrt((yuv_std / total_pixels) - yuv_mean ** 2)
+
+    # convert to [0, 1] range
+    print("Mean: " + str(yuv_mean / 255.0))
+    print("Std: " + str(yuv_std / 255.0))
+
+iterate_files()
