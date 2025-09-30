@@ -21,7 +21,8 @@ transform = transforms.Compose([
 
 def eval_model() -> None: 
     model = End_to_End_NN()
-    model.load_state_dict(torch.load("/Volumes/joeham/model_extra_epoch_pil_less.pth", weights_only=False)) 
+    model.load_state_dict(
+        torch.load("/Volumes/joeham/model_extra_epoch_pil_less.pth", weights_only=False)) 
     model.eval()  
 
     # Validation data
