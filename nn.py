@@ -27,12 +27,12 @@ class End_to_End_NN(nn.Module):
         self.conv4 = torch.nn.Conv2d(48, 64, kernel_size=(3,3))   
         self.conv5 = torch.nn.Conv2d(64, 64, kernel_size=(3,3))
 
-        self.li1 = torch.nn.Linear(1152, 100) 
+        self.li1 = torch.nn.Linear(1153, 100) 
        	self.li2 = torch.nn.Linear(100, 50) 
        	self.li3 = torch.nn.Linear(50, 10) 
        	self.li4 = torch.nn.Linear(10, 1)  
 
-    def forward(self, x):
+    def forward(self, x, steering):
         x = self.norm(x)
 
         x = F.relu(self.conv1(x))
@@ -42,6 +42,7 @@ class End_to_End_NN(nn.Module):
         x = F.relu(self.conv5(x)) 
     
         x = x.flatten(start_dim=1)
+        x = torch.cat((x, steering), dim=1)
 
         x = self.li1(x)
         x = self.li2(x)
