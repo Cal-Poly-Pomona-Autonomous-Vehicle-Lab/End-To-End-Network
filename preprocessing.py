@@ -3,14 +3,26 @@ import torch
 import cv2 
 import random
 import matplotlib.pyplot as plt
+import numpy as np
 
 from PIL import Image 
 from torchvision import transforms 
 
+
+# Max 573 
+# Min 451
+# Const expression's are set here
+MAX_STEERING = 573
+MIN_STEERING = 451 
+
+IMAGE_HEIGHT = 66
+IMAGE_WIDTH = 200 
+
 transform = transforms.Compose([
-    transforms.Resize((66, 200)),
+    transforms.Resize((IMAGE_HEIGHT, IMAGE_HEIGHT)),
     transforms.ToTensor(),
-    transforms.Normalize((0.6087, 0.6015, 0.5598), (0.1883, 0.1921, 0.2182))
+    transforms.Normalize((0.6087, 0.6015, 0.5598), 
+        (0.1883, 0.1921, 0.2182)) # Normalize images based on mean, std calculated Z = x - mean / std 
 ]) 
 
 class data_processing: 
@@ -25,12 +37,18 @@ class data_processing:
         self.count_files()
 
     def augment_image(self, front_img: Image, steering: float) -> (Image, float):
+        # mean = 0
+        # std = 2
+
         is_flip = random.choice([True, False])
+
+        # Requires implementation of rotate 
+        # is_rotate = np.random.normal(mean, std, size=1)
 
         if is_flip == True: 
             front_img = transforms.v2.functional.horizontal_flip(front_img)
             steering = steering * -1
-        
+
         return (front_img, steering)
     
     def check_if_folders_exists(self) -> None: 
@@ -78,7 +96,7 @@ class data_processing:
         merged_log_file.close() 
 
             
-    def count_files(self) -> int:
+    def count_files(self) -> None:
         if not os.path.exists(self.merge_log_file + "merged_log_file.txt"): 
             print("Merge log path doesn't exist") 
             raise IOError("%s: %s" % (self.merge_log_file, "Merge log file text doesn't exist")) 
@@ -87,8 +105,6 @@ class data_processing:
         log_file = open(self.merge_log_file + "merged_log_file.txt") 
         for (idx, line) in enumerate(log_file): 
             self.count += 1
-
-        return self.count
             
     def __len__(self) -> int: 
         return self.count
@@ -99,8 +115,9 @@ class data_processing:
         # Check if Image path and Logging path 
         self.check_if_folders_exists()
 
-        line_req = None
         log_file = open(self.merge_log_file + "merged_log_file.txt"); 
+
+        line_req = None
         ran_idx = None
 
         for (line_idx, line) in enumerate(log_file): 
@@ -144,7 +161,7 @@ class data_processing:
 
         # Normalize
         steering_val = int(line_arr[4]) 
-        steering_val = (2 * ((steering_val - 451) / (573 - 451))) - 1 
+        steering_val = (2 * ((steering_val - MIN_STEERING) / (MAX_STEERING - MIN_STEERING))) - 1 
 
         # front_image_yuv, steering_val = self.augment_image(front_image_yuv, steering_val)
 
@@ -152,19 +169,20 @@ class data_processing:
         # right_image_yuv = transform(right_image_yuv)
         # left_image_yuv = transform(left_image_yuv)
 
-        # Max 573 
-        # Min 451
         steering = torch.tensor(steering_val, dtype=torch.float32) 
 
         return front_image_yuv, steering 
         
 
 if __name__ == '__main__':
-    preprocess = data_processing()
+    image_folder = "/Volumes/joeham/valid_test_1/image_data/"
+    logging_folder = "/Volumes/joeham/valid_test_1/logging_data/"
+    merge_folder = "/Volumes/joeham/valid_test_1/"
 
-    right_img, steering = preprocess[500]
-    frnt_img = transforms.functional.to_pil_image(right_img)    
+    preprocess = data_processing(image_folder, logging_folder, merge_folder)
+    # right_img, steering = preprocess[500]
+    # frnt_img = transforms.functional.to_pil_image(right_img)    
     # frnt_img = frnt_img.show()
 
-    print(frnt_img.size())
-    print("finish")
+    # print(frnt_img.size())
+    # print("finish")
