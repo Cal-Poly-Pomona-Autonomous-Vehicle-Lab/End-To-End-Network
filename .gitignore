@@ -1,1 +1,4 @@
 inference_cpp/build/*
+.vscode/*
+.ipynb_checkpoints/*
+__pycache__/*
