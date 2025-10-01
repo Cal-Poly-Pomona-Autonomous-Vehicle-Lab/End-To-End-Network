@@ -5,15 +5,11 @@ import torchvision.transforms as transforms
 import numpy as np 
 import numpy.typing as npt
 
-image_folder = "/Volumes/joeham/valid_test_1/image_data/"
-logging_folder = "/Volumes/joeham/valid_test_1/logging_data/"
-merge_folder = "/Volumes/joeham/valid_test_1/"
+image_folder = ""
+logging_folder = ""
+merge_folder = ""
 
 BATCH_SIZE = 1
-
-transform = transforms.Compose([
-    transforms.ToTensor(),
-])
 
 def calculate_std(img: Image, width: int, height: int, mean: npt.NDArray) -> npt.NDArray: 
     yuv_std = np.zeros(3, dtype=np.float64)
@@ -37,9 +33,6 @@ def calculate_mean(img: Image, width: int, height: int) -> npt.NDArray:
 
     return yuv_sum
 
-def calculate_standardization() -> None:
-    pass 
-
 def iterate_files() -> None: 
     total_pixels = 0
 
@@ -57,8 +50,8 @@ def iterate_files() -> None:
         if image.startswith("."): 
             continue 
 
-        if processed_files % 10 == 0: 
-            print(f"Files processed {processed_files / len(image_file_names)}")
+        if processed_files % 100 == 0: 
+            print(f"Files processed {processed_files / len(image_file_names)} %")
 
 
         img = Image.open(image_folder + image)
@@ -80,11 +73,13 @@ def iterate_files() -> None:
 
 
     # E[x^2] - E[x]^2
-    # sqrt ( 1/N * sum(x)^2 - 1/N * sum(x - mean) ^2 ) 
+    # sqrt ( 1/N * sum(x^2) - (1/N * sum(x))^2) 
     yuv_std = np.sqrt((yuv_std / total_pixels) - yuv_mean ** 2)
 
     # convert to [0, 1] range
     print("Mean: " + str(yuv_mean / 255.0))
     print("Std: " + str(yuv_std / 255.0))
 
-iterate_files()
+
+if __name__ == '__main__': 
+    iterate_files()

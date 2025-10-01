@@ -7,13 +7,19 @@ import matplotlib.pyplot as plt
 from PIL import Image 
 from torchvision import transforms 
 
+# Mean: [0.49213083 0.49843117 0.4999843 ]
+# Std: [0.26910319 0.0355522  0.02291114]
+
+MAX_STEERING = 573 
+MIN_STEERING = 451
+
 transform = transforms.Compose([
     transforms.Resize((66, 200)),
     transforms.ToTensor(),
     transforms.Normalize((0.6087, 0.6015, 0.5598), (0.1883, 0.1921, 0.2182))
 ]) 
 
-class data_processing: 
+class NNDataProcessing: 
     def __init__(self, image_path, logging_path, merge_log_file): 
         self.image_path = image_path
         self.logging_path = logging_path
@@ -93,27 +99,25 @@ class data_processing:
     def __len__(self) -> int: 
         return self.count
              
-
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
         
         # Check if Image path and Logging path 
         self.check_if_folders_exists()
 
-        line_req = None
+        line_search = None
         log_file = open(self.merge_log_file + "merged_log_file.txt"); 
-        ran_idx = None
 
         for (line_idx, line) in enumerate(log_file): 
 
             if line_idx == idx: 
-                line_req = line            
+                line_search = line            
                 break 
             
-        if line_req is None: 
+        if line_search is None: 
             raise IndexError("No Index Found")
 
         # Split the line whenver there's a space
-        line_arr = line_req.split(" ") 
+        line_arr = line_search.split(" ") 
         
         front_img_name = line_arr[1].split("/")[-1] 
         left_img_name = line_arr[2].split("/")[-1] 
@@ -123,48 +127,51 @@ class data_processing:
         left_img_name = self.image_path + left_img_name + ".jpg" 
         right_img_name = self.image_path + right_img_name + ".jpg"
 
-        # Get all Images and steering value 
-        # front_img = Image.open(front_img_name) 
+        # OBTAIN IMAGES: Get all Images and steering value 
+        front_img = cv2.imread(right_img_name) 
+        
         # right_img = Image.open(right_img_name) 
         # left_img = Image.open(left_img_name) 
 
-        front_img = cv2.imread(right_img_name)
-
-        # Crop the image to remove any uneccesarry part of the vehicle
-        # front_img = right_img.crop((110, 0, 540, 450))
-        # front_img = right_img.crop((110, 0, 540, 450))
+        # CROP IMAGE: Crop the image to remove any uneccesarry part of the vehicle
         front_img_crop = front_img[0:410, 110:540]
 
-        # Convert to yuv image 
+        # right_img_crop = right_img[]
+        # left_img_crop = left_img[] 
+
+        # CONVERT TO YUV: Convert to yuv image 
         # front_image_yuv = front_img.convert("YCbCr")
+
         # right_image_yuv = right_img.convert("YCbCr")
         # left_image_yuv = left_img.convert("YCbCr")
         front_img_yuv = cv2.cvtColor(front_img_crop, cv2.COLOR_RGB2YUV)
+
+        # CONVERT BACK TO PIL
         pil_img = Image.fromarray(front_img_yuv)
 
-        # Normalize
+        # NORMALIZE TO [-1, 1] 
         steering_val = int(line_arr[4]) 
-        steering_val = (2 * ((steering_val - 451) / (573 - 451))) - 1 
+        steering_val = (2 * ((steering_val - MIN_STEERING) 
+            / (MAX_STEERING - MIN_STEERING))) - 1 
 
         # front_image_yuv, steering_val = self.augment_image(front_image_yuv, steering_val)
 
+        # Final conversion to Resize, Tensor, and Normalization of Image
         front_image_yuv = transform(pil_img)
         # right_image_yuv = transform(right_image_yuv)
         # left_image_yuv = transform(left_image_yuv)
 
-        # Max 573 
-        # Min 451
         steering = torch.tensor(steering_val, dtype=torch.float32) 
 
         return front_image_yuv, steering 
         
 
 if __name__ == '__main__':
-    preprocess = data_processing()
+    preprocess = NNDataProcessing()
 
     right_img, steering = preprocess[500]
-    frnt_img = transforms.functional.to_pil_image(right_img)    
-    # frnt_img = frnt_img.show()
+    front_img = transforms.functional.to_pil_image(right_img)    
+    front_img = front_img.show()
 
     print(frnt_img.size())
     print("finish")

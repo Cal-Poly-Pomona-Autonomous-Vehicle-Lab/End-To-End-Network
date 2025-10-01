@@ -14,7 +14,29 @@ from torch import nn
 from PIL import Image
 
 
-EPOCH = 5
+EPOCH = 3
+
+HARD_DRIVE_MACOS = "/Volumes"
+HARD_DRIVE_LINUX = "/media"
+
+# For Linux
+COMPUTER_NAME = ""
+HARD_DRIVE_NAME = "/joeham"
+
+MODEL_NAME = "/model_extra_epoch_pil_less.pth"
+MODEL_PATH = f"{HARD_DRIVE_NAME}{MODEL_NAME}"
+
+TRAINING_DATA_NAME = "/valid_test_1"
+
+MODEL_EVAL = "/model_extra_epoch_pil_less.pth"
+model_eval_path = f"{HARD_DRIVE_NAME}{TRAINING_DATA_NAME}{MODEL_EVAL}"
+
+image_folder = f"{HARD_DRIVE_NAME}{TRAINING_DATA_NAME}/image_data/"
+logging_folder = f"{HARD_DRIVE_NAME}{TRAINING_DATA_NAME}/logging_data/"
+merge_folder = f"{HARD_DRIVE_NAME}{TRAINING_DATA_NAME}/"
+
+BATCH_SIZE = 10
+
 transform = transforms.Compose([
     transforms.ToTensor(), 
 ]) 
@@ -22,16 +44,22 @@ transform = transforms.Compose([
 def eval_model() -> None: 
     model = End_to_End_NN()
     model.load_state_dict(
-        torch.load("/Volumes/joeham/model_extra_epoch_pil_less.pth", weights_only=False)) 
+        torch.load("{MODEL_PATH}", weights_only=False)) 
     model.eval()  
 
-    # Validation data
-    image_folder = "/Volumes/joeham/valid_test_1/image_data/"
-    logging_folder = "/Volumes/joeham/valid_test_1/logging_data/"
-    merge_folder = "/Volumes/joeham/valid_test_1/"
 
-    data = preprocessing.data_processing(image_folder, logging_folder, merge_folder)
-    valid_dataloader = DataLoader(data, batch_size=1, shuffle=False)
+    match sys.platform: 
+        case "linux": 
+            image_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{image_folder}"
+            logging_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{logging_folder}"
+            merge_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{merge_folder}"
+        case "darwin": 
+            image_folder = f"{HARD_DRIVE_MACOS}{image_folder}"
+            logging_folder = f"{HARD_DRIVE_MACOS}{logging_folder}"
+            merge_folder = f"{HARD_DRIVE_LINUX}{merge_folder}"
+
+    data = preprocessing.NNDataProcessing(image_folder, logging_folder, merge_folder)
+    valid_dataloader = DataLoader(data, batch_size=BATCH_SIZE, shuffle=False)
 
     epoch = 1
     correct = 0
@@ -39,7 +67,7 @@ def eval_model() -> None:
 
     with torch.no_grad():
         for (front_img, steering) in valid_dataloader: 
-            output = model(front_img)
+            output = model(front_img, steering)
             accuracy = is_correct(steering, output)
 
             # Every 100 Images stop and anaylze the image and assoicated steering 
@@ -84,20 +112,31 @@ def is_correct(steering, output, threshold=0.3) -> float:
     return accuracy 
 
 def train() -> None:
+    global model_eval_path 
+    global logging_folder
+    global merge_folder
+    global image_folder
+
     save_model = input("Save model? (y or n) ") 
 
-    # Training data 
-    image_folder = "/Volumes/joeham/logging_camera_down/image_data/" 
-    logging_folder = "/Volumes/joeham/logging_camera_down/logging_data/"
-    merge_folder = "/Volumes/joeham/logging_camera_down/"
+    match sys.platform: 
+        case "linux": 
+            model_eval_path = f"{HARD_DRIVE_LINUX}{model_eval_path}"
 
-    if sys.platform == "linux": 
-        image_folder = "/media/jojo-main/joeham/logging_camera_down/image_data"
-        logging_folder = "/media/jojo-main/joeham/logging_camera_down/logging_data"
-        merge_folder = "/media/jojo-main/joeham/logging_camera_down/"
+            image_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{image_folder}"
+            logging_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{logging_folder}"
+            merge_folder = f"{HARD_DRIVE_LINUX}{COMPUTER_NAME}{merge_folder}"
+        case "darwin": 
+            model_eval_path = f"{HARD_DRIVE_MACOS}{model_eval_path}"
 
-    data = preprocessing.data_processing(image_folder, logging_folder, merge_folder)
-    train_dataloader = DataLoader(data, batch_size=10, shuffle=True)
+            image_folder = f"{HARD_DRIVE_MACOS}{image_folder}"
+            logging_folder = f"{HARD_DRIVE_MACOS}{logging_folder}"
+            merge_folder = f"{HARD_DRIVE_MACOS}{merge_folder}"
+
+    print(image_folder)
+
+    data = preprocessing.NNDataProcessing(image_folder, logging_folder, merge_folder)
+    train_dataloader = DataLoader(data, batch_size=BATCH_SIZE, shuffle=True)
 
 	# Load the Model
     model = End_to_End_NN()
@@ -112,8 +151,8 @@ def train() -> None:
         for (front_img, steering) in train_dataloader: 
             optimizer.zero_grad()
 
-            output = model(front_img) 
             steering = steering.unsqueeze(1)
+            output = model(front_img, steering) 
 
             loss = loss_fn(output, steering) 
             accuracy = is_correct(steering, output)
@@ -130,7 +169,7 @@ def train() -> None:
     
         print(f"Checkpoint {epoch}")
         print("Saving Model!....")
-        torch.save(model.state_dict(), "/Volumes/joeham/model_extra_epoch_pil_less.pth") 
+        torch.save(model.state_dict(), f"/Volumes/joeham/{MODEL_NAME}") 
         print("The accuracy is: " + str(correct / (len(train_dataloader) * (epoch + 1))))
 
     plt.plot(loss_every_epoch) 
@@ -139,10 +178,10 @@ def train() -> None:
     plt.title("Training Loss") 
     plt.show() 
 
-    if save_model == "y" and sys.platform == "darwin": 
-        torch.save(model.state_dict(), "/Volumes/joeham/model_extra_epoch_pil_less.pth") 
-    elif save_model == "y" and sys.platform == "linux": 
-        torch.save(model.state_dict(), "/media/jojo-main/joeham/model_batch_size_1.pth") 
+    if save_model == "n": 
+        return
+    
+    torch.save(model.state_dict(), model_eval_path)
 
 
 def main(): 
