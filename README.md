@@ -1,4 +1,4 @@
-# Self Driving Vehicle with Behvaior cloning
+# Self Driving Vehicle with Behavior cloning
 
 ## Preprocessing
     image_norm.py - Calcuate the standardization per channel for the entire dataset
